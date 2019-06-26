@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import codecs
+import csv
+import io
 import logging
 import pkg_resources
+import urllib
 from . import audioengine
 from . import brain
 from . import commandline
@@ -12,6 +16,7 @@ from . import mic
 from . import profile
 from . import local_mic
 from . import batch_mic
+from .strcmpci import strcmpci
 
 USE_STANDARD_MIC = 0
 USE_TEXT_MIC = 1
@@ -419,7 +424,7 @@ class Naomi(object):
         self.conversation = conversation.Conversation(
             self.mic, self.brain, self.config)
 
-    def list_plugins(self):
+    def list_installed_plugins(self):
         plugins = self.plugins.get_plugins()
         len_name = max(len(info.name) for info in plugins)
         len_version = max(len(info.version) for info in plugins)
@@ -432,6 +437,48 @@ class Naomi(object):
         for device in self.audio.get_devices():
             device.print_device_info(
                 verbose=(self._logger.getEffectiveLevel() == logging.DEBUG))
+
+    # Functions for plugin management
+    def list_available_plugins(self, categories):
+        installed_plugins = {}
+        for category in self.plugins._categories_map:
+            # Get a list of installed plugins in each category
+            superclass = self.plugins._categories_map[category]
+            for info in self.plugins._plugins.values():
+                if issubclass(info.plugin_class, superclass):
+                    if(not category in installed_plugins):
+                        installed_plugins[category]={}
+                    installed_plugins[category][info.name] = info.version
+        for category in self.plugins._categories_map:
+            for name in installed_plugins[category]:
+                version = installed_plugins[category][name]
+        #audioengine_plugins = self.plugins.get_plugins_by_category('audioengine')
+        #stt_plugins
+        #for plugin in plugins:
+        #    print("{} {} ({}) {}".format(plugin.name,plugin.version,plugin._plugin_class,plugin.description))
+        print("Available Plugins:")
+        # Get the list of available plugins:
+        # NaomiProject: https://raw.githubusercontent.com/NaomiProject/naomi-plugins/master/plugins.csv
+        # aaronchantrill: https://raw.githubusercontent.com/aaronchantrill/naomi-plugins/master/plugins.csv
+        url = "https://raw.githubusercontent.com/aaronchantrill/naomi-plugins/master/plugins.csv"
+        # It would be good if we could actually read the csv file line by line
+        # rather than reading it all into memory, but that might require some
+        # custom code. For right now, we'll use the python tools.
+        with urllib.request.urlopen(url) as f:
+            file_contents = f.read().decode('utf-8')
+        csvfile = csv.DictReader(io.StringIO(file_contents))
+        printed = 0 # so we can print a message if no matches
+        for row in csvfile:
+            flat_cat = [y for x in categories for y in x]
+            if len(flat_cat):
+                if(row["Category"] in [y for x in categories for y in x]):
+                    printed += 1
+                    pluginstore.printplugin(row, installed_plugins)
+            else:
+                printed += 1
+                pluginstore.printplugin(row, installed_plugins)
+        if(printed == 0):
+            print("Sorry, no plugins matched")
 
     def run(self):
         self.conversation.askName()

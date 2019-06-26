@@ -42,6 +42,28 @@ def parse_info_file(infofile_path):
     return cp
 
 
+# Standardize printing of a plugin row from the repository CSV
+def printplugin(plugin, installed_plugins, *args, **kwargs):
+    installed = False
+    version = ""
+    message = " [{}]".format(plugin["Version"])
+    installed_version = None
+    if(plugin["Category"] in installed_plugins):
+        if(plugin["Name"] in installed_plugins[plugin["Category"]]):
+            version = installed_plugins[plugin["Category"]][plugin["Name"]]
+            installed = True
+            if(plugin["Version"] == version):
+                message = " [{} installed]".format(plugin["Version"])
+            else:
+                message = " [{} installed: {}]".format(plugin["Version"],version)
+    print("{} ({}{}) - {}".format(
+        plugin["Name"],
+        plugin["Category"],
+        message,
+        plugin["Description"]
+    ))
+
+
 def parse_plugin_class(module_name, plugin_directory, superclasses):
     spec = importlib.util.spec_from_file_location(
         module_name,

@@ -51,17 +51,55 @@ def main(args=None):
             'and transcripts for training'
         ])
     )
+    # Plugin Repository Management
+    pr_man = parser.add_mutually_exclusive_group(required=False)
+    pr_man.add_argument(
+        '--list-available-plugins',
+        nargs='*',
+        dest='list_available',
+        action='append',
+        help='List available plugins (by category) and exit'
+    )
+    pr_man.add_argument(
+        '--install',
+        nargs="+",
+        dest='plugins_to_install',
+        action='append',
+        help='Install plugin and exit'
+    )
+    pr_man.add_argument(
+        '--remove',
+        nargs='+',
+        dest='plugins_to_remove',
+        action='append',
+        help='Remove (uninstall) plugins and exit'
+    )
+    pr_man.add_argument(
+        '--disable',
+        nargs='+',
+        dest='plugins_to_disable',
+        action='append',
+        help='Disable plugins and exit'
+    )
+    pr_man.add_argument(
+        '--enable',
+        nargs='+',
+        dest='plugins_to_enable',
+        action='append',
+        help='Enable plugins and exit'
+    )
     list_info = parser.add_mutually_exclusive_group(required=False)
     list_info.add_argument(
-        '--list-plugins',
+        '--list-installed-plugins',
         action='store_true',
-        help='List plugins and exit'
+        help='List installed plugins and exit'
     )
     list_info.add_argument(
         '--list-audio-devices',
         action='store_true',
         help='List audio devices and exit'
     )
+    # input options
     mic_mode = parser.add_mutually_exclusive_group(required=False)
     mic_mode.add_argument(
         '--local',
@@ -127,12 +165,16 @@ def main(args=None):
         save_active_audio=p_args.save_active_audio,
         save_noise=p_args.save_noise
     )
-    if p_args.list_plugins:
-        app.list_plugins()
+    if p_args.list_installed_plugins:
+        app.list_installed_plugins()
         sys.exit(1)
     elif p_args.list_audio_devices:
         app.list_audio_devices()
         sys.exit(0)
+    if p_args.list_available:
+        app.list_available_plugins(p_args.list_available)
+        sys.exit(0)
+
     app.run()
 
 

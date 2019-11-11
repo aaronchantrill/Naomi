@@ -268,6 +268,8 @@ class commandline(object):
     def simple_password(self, prompt, default=None):
         prompt += ": "
         prompt += self.input_text()
+        if(default):
+            prompt += "*****//"
         # don't use print here so no automatic carriage return
         # sys.stdout.write(prompt)
         response = getpass(prompt)

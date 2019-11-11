@@ -18,7 +18,7 @@ from . import commandline as interface
 from . import i18n
 from . import paths
 from . import pluginstore
-# from . import populate
+from . import populate
 from . import conversation
 from . import mic
 from . import profile
@@ -1122,7 +1122,8 @@ class Naomi(object):
 
     # Right now what install_plugins does is git clone the plugin into the
     # user's plugin dir (~/.naomi/plugins) and then run install.py if there
-    # is one, or python_requirements.txt if there is one.
+    # is one, or python_requirements.txt if there is one, then compile any
+    # translation files in locale.
     def install_plugins(self, plugins):
         flat_plugins = [y for x in plugins for y in x]
         csvfile = self.get_remote_plugin_repositories(flat_plugins)
@@ -1273,6 +1274,18 @@ class Naomi(object):
                                     required_file
                                 ]
                                 run_command(cmd)
+                            # Finally, compile any translation files
+                            locale = os.path.join(install_dir,"locale")
+                            if os.path.isdir(locale):
+                                for (dirpath, dirnames, filenames) in walk(locale):
+                                    for filename in filenames:
+                                        if filename.lower().strip().endswith(".po"):
+                                            print("Compiling: '{}'".format(filename))
+                                            po_file = os.path.join(locale, filename)
+                                            mo_file = os.path.join(locale, "{}.mo".format(filename[:-3]))
+                                            cmd = ['msgfmt', '-o', mo_file, po_file]
+                                            run_command(cmd)
+                                    break
                         # Since the plugin will request its own settings each
                         # time it is run with settings missing, no need to set
                         # that up now.

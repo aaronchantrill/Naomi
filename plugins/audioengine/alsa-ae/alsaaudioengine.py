@@ -100,13 +100,20 @@ class AlsaAudioDevice(plugin.audioengine.AudioDevice):
             raise Exception(msg)
         # Everything looks fine, open the PCM stream
         pcm_type = alsaaudio.PCM_PLAYBACK if output else alsaaudio.PCM_CAPTURE
-        stream = alsaaudio.PCM(type=pcm_type,
-                               mode=alsaaudio.PCM_NORMAL,
-                               device=self.name)
-        stream.setchannels(channels)
-        stream.setrate(rate)
-        stream.setformat(bits_to_samplefmt(bits))
-        stream.setperiodsize(chunksize)
+        stream = None
+        while not stream:
+            try:
+                stream = alsaaudio.PCM(
+                    type=pcm_type,
+                    mode=alsaaudio.PCM_NORMAL,
+                    device=self.name
+                )
+                stream.setchannels(channels)
+                stream.setrate(rate)
+                stream.setformat(bits_to_samplefmt(bits))
+                stream.setperiodsize(chunksize)
+            except alsaaudio.ALSAAudioError as e:
+                self._logger.warn(e.args[0])
         self._logger.debug("%s stream opened on device '%s' (%d Hz, %d " +
                            "channel, %d bit)", "output" if output else "input",
                            self.slug, rate, channels, bits)

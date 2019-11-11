@@ -45,68 +45,72 @@ class SNRPlugin(plugin.VADPlugin, unittest.TestCase):
         recording = False
         if "recording" in kwargs:
             recording = kwargs["recording"]
-        rms = audioop.rms(frame, int(self._input_device._input_bits / 8))
-        if rms > 0 and self._threshold > 0:
-            snr = round(20.0 * math.log(rms / self._threshold, 10))
-        else:
-            snr = 0
-        if snr in self.distribution:
-            self.distribution[snr] += 1
-        else:
-            self.distribution[snr] = 1
-        # calculate the mean and standard deviation
-        sum1 = sum([
-            value * (key ** 2) for key, value in self.distribution.items()
-        ])
-        items = sum([value for value in self.distribution.values()])
-        if items > 1:
-            # mean = sum( value * freq )/items
-            mean = sum(
-                [key * value for key, value in self.distribution.items()]
-            ) / items
-            stddev = math.sqrt((sum1 - (items * (mean ** 2))) / (items - 1))
-            self._threshold = mean + (
-                stddev * profile.get(
-                    ['snr_vad', 'tolerance'],
-                    1
+        try:
+            rms = audioop.rms(frame, int(self._input_device._input_bits / 8))
+            if rms > 0 and self._threshold > 0:
+                snr = round(20.0 * math.log(rms / self._threshold, 10))
+            else:
+                snr = 0
+            if snr in self.distribution:
+                self.distribution[snr] += 1
+            else:
+                self.distribution[snr] = 1
+            # calculate the mean and standard deviation
+            sum1 = sum([
+                value * (key ** 2) for key, value in self.distribution.items()
+            ])
+            items = sum([value for value in self.distribution.values()])
+            if items > 1:
+                # mean = sum( value * freq )/items
+                mean = sum(
+                    [key * value for key, value in self.distribution.items()]
+                ) / items
+                stddev = math.sqrt((sum1 - (items * (mean ** 2))) / (items - 1))
+                self._threshold = mean + (
+                    stddev * profile.get(
+                        ['snr_vad', 'tolerance'],
+                        1
+                    )
                 )
-            )
-            # We'll say that the max possible value for SNR is mean+3*stddev
-            if self._minsnr is None:
-                self._minsnr = snr
-            if self._maxsnr is None:
-                self._maxsnr = snr
-            maxsnr = mean + 3 * stddev
-            if snr > maxsnr:
-                maxsnr = snr
-            if maxsnr > self._maxsnr:
-                self._maxsnr = maxsnr
-            minsnr = mean - 3 * stddev
-            if snr < minsnr:
-                minsnr = snr
-            if minsnr < self._minsnr:
-                self._minsnr = minsnr
-            # Loop through visualization plugins
-            visualizations.run_visualization(
-                "mic_volume",
-                recording=recording,
-                snr=snr,
-                minsnr=self._minsnr,
-                maxsnr=self._maxsnr,
-                mean=mean,
-                threshold=self._threshold
-            )
-        if(items > 100):
-            # Every 100 samples, rescale, allowing changes in
-            # the environment to be recognized more quickly.
-            self.distribution = {
-                key: (
-                    (value + 1) / 2
-                ) for key, value in self.distribution.items()
-            }
-        if(snr < self._threshold):
-            response = False
-        else:
-            self._logger.info("Voice Detected: {}".format(snr))
-            response = True
-        return response
+                # We'll say that the max possible value for SNR is mean+3*stddev
+                if self._minsnr is None:
+                    self._minsnr = snr
+                if self._maxsnr is None:
+                    self._maxsnr = snr
+                maxsnr = mean + 3 * stddev
+                if snr > maxsnr:
+                    maxsnr = snr
+                if maxsnr > self._maxsnr:
+                    self._maxsnr = maxsnr
+                minsnr = mean - 3 * stddev
+                if snr < minsnr:
+                    minsnr = snr
+                if minsnr < self._minsnr:
+                    self._minsnr = minsnr
+                # Loop through visualization plugins
+                visualizations.run_visualization(
+                    "mic_volume",
+                    recording=recording,
+                    snr=snr,
+                    minsnr=self._minsnr,
+                    maxsnr=self._maxsnr,
+                    mean=mean,
+                    threshold=self._threshold
+                )
+            if(items > 100):
+                # Every 100 samples, rescale, allowing changes in
+                # the environment to be recognized more quickly.
+                self.distribution = {
+                    key: (
+                        (value + 1) / 2
+                    ) for key, value in self.distribution.items()
+                }
+            if(snr < self._threshold):
+                response = False
+            else:
+                self._logger.info("Voice Detected: {}".format(snr))
+                response = True
+            return response
+        except audioop.error as e:
+            self._logger.warn(e.args[0])
+            return False

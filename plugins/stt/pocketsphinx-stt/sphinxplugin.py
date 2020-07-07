@@ -304,6 +304,10 @@ class PocketsphinxSTTPlugin(plugin.STTPlugin):
                             line = re.sub('\s+', ' ', line)
                             # replace the first whitespace with a tab
                             line = line.replace(' ', '\t', 1)
+                            # remove special characters Phonetisaurus checks for
+                            line = line.replace('_', ' ')
+                            line = line.replace('}', ' ')
+                            line = line.replace('|', ' ')
                             print(line, file=out_file)
             if(not os.path.isfile(fst_model)):
                 # Use phonetisaurus to prepare an fst model

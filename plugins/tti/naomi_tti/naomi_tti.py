@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import math
 import os
 import re
 from jiwer import wer
@@ -451,6 +452,7 @@ class NaomiTTIPlugin(plugin.TTIPlugin):
                 'action': variantscores[bestvariant]['action'],
                 'input': phrase,
                 'matches': variantscores[bestvariant]['matches'],
-                'score': variantscores[bestvariant]['score']
+                # Convert the score to a percent
+                'score': 1/(1+math.exp(-variantscores[bestvariant]['score']))
             }
         }

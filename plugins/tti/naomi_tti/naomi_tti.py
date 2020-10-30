@@ -6,7 +6,8 @@ from jiwer import wer
 from naomi import paths
 from naomi import plugin
 from naomi import profile
-# from pprint import pprint
+from pprint import pprint
+import pdb
 
 
 # Replace the nth occurrance of sub
@@ -40,10 +41,25 @@ def is_keyword(word):
         response = True
     return response
 
+
+# Convert a word ("word") to a keyword ("{word}")
+def to_keyword(word):
+    return "{}{}{}".format("{", word, "}")
+
+
 # converts all non-keyword words to upper case in a template. This allows
 # case insensitive matching.
 def convert_template_to_upper(template):
     return " ".join([word if is_keyword(word) else word.upper() for word in template.split()])
+
+
+# This is only required because file.writelines() does not automatically add
+# newlines to the lines passed in
+def line_generator(items):
+    for item in items:
+        yield item
+        yield "\n"
+
 
 class NaomiTTIPlugin(plugin.TTIPlugin):
     def __init__(self, *args, **kwargs):
@@ -179,6 +195,49 @@ class NaomiTTIPlugin(plugin.TTIPlugin):
                 phrases.append(word)
 
         return sorted(list(set(phrases)))
+
+    def generate_intent_language_models(self, language_models_dir):
+        # The language models directory is pretty much the equivalent of the vocabularies directory
+        if not os.path.isdir(language_models_dir):
+            os.makedirs(language_models_dir)
+        phrases = []
+        # if passive listen is active,
+        # include the keywords in the base phrases
+        if(profile.get_arg('passive_listen')):
+            phrases.extend(profile.get(['keyword'], ['NAOMI']))
+        for intent in self.intent_map['intents']:
+            print("Intent: {}".format(intent))
+            if('templates' in self.intent_map['intents'][intent]):
+                print("Templates: {}".format(self.intent_map['intents'][intent]['templates']))
+                templates = self.intent_map['intents'][intent]['templates']
+                if(intent in self.keywords):
+                    print("Keywords: {}".format(self.keywords[intent]))
+                    keywords = self.keywords[intent]
+                    for keyword in keywords:
+                        # This will not replace keywords that do not have a list associated with them, like regex and open keywords
+                        #print("Replacing {} with words from {} in templates".format(keyword,keywords[keyword]))
+                        for template in templates:
+                            if(to_keyword(keyword) in template):
+                                templates.extend([template.replace(to_keyword(keyword), word.upper()) for word in keywords[keyword]])
+                            # Now that we have expanded every instance of keyword in templates, delete any template that still contains keyword
+                            templates = [template for template in templates if not to_keyword(keyword) in template]
+                # Write the expanded templates out as a language model for the intent
+                lmdir = os.path.join(language_models_dir, intent)
+                if(not os.path.isdir(lmdir)):
+                    os.makedirs(lmdir)
+                # open a phrases file in the language model directory
+                lmfile = os.path.join(lmdir, "phrases.txt")
+                with open(lmfile, "w") as f:
+                    f.writelines(line_generator(templates))
+                phrases.extend(templates)
+        # create a root phrases file for determining intent
+        lmfile = os.path.join(language_models_dir,"phrases.txt")
+        with open(lmfile, "w") as f:
+            f.writelines(line_generator(phrases))
+
+    # Return a list of the intents that have been added to this intent parser.
+    def list_intents(self):
+        return [intent for intent in self.intent_map['intents']]
 
     def determine_intent(self, phrase):
         phrase = phrase.upper()

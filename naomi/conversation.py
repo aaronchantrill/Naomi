@@ -53,6 +53,8 @@ class Conversation(i18n.GettextMixin):
 
             if utterance:
                 intent = self.brain.query(utterance)
+                # second round
+                utterance = stt_engine.transcribe(audiofile,intent)
                 if intent:
                     try:
                         self._logger.info(intent)

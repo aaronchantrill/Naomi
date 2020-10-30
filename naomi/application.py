@@ -220,6 +220,7 @@ class Naomi(object):
         # passive_listen
         if(not passive_listen):
             passive_listen = profile.get_profile_flag(["passive_listen"])
+        profile.set_arg('passive_listen', passive_listen)
 
         # Audiolog settings
         if(use_mic == USE_STANDARD_MIC):
@@ -389,6 +390,7 @@ class Naomi(object):
             category='tti'
         )
         intent_parser = tti_info.plugin_class(tti_info)
+        profile.set_arg('tti_plugin', intent_parser)
 
         self.brain = brain.Brain(intent_parser)
         for info in self.plugins.get_plugins_by_category('speechhandler'):
@@ -410,7 +412,8 @@ class Naomi(object):
                         self._logger.getEffectiveLevel() == logging.DEBUG
                     )
                 )
-
+        intent_parser.generate_intent_language_models(paths.sub('languagemodels'))
+    
         # print(self.brain._intentparser.intent_map)
         self.brain.train()
 

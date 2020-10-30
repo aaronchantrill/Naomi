@@ -24,6 +24,18 @@ swig
 bison
 libpulse-dev
 
+## KenLM for generating language models
+build-essential
+cmake
+libboost-system-dev
+libboost-thread-dev
+libboost-program-options-dev
+libboost-test-dev
+libeigen3-dev
+zlib1g-dev
+libbz2-dev
+liblzma-dev
+
 #### Phonetisaurus is used to build dictionaries
 gcc
 g++

@@ -78,9 +78,12 @@ def check_python_import(package_or_module):
     loader = pkgutil.get_loader(package_or_module)
     found = loader is not None
     if found:
-        logger.debug("Python %s '%s' found: %r",
-                     "package" if loader.is_package(package_or_module)
-                     else "module", package_or_module, loader.get_filename())
+        logger.debug(
+            "Python %s '%s' found: %r",
+            "package" if loader.is_package(package_or_module) else "module",
+            package_or_module,
+            loader.get_filename() if "get_filename" in dir(loader) else loader._resolve_filename(package_or_module)[0]
+        )
     else:
         logger.debug("Python import '%s' not found", package_or_module)
     return found

@@ -47,11 +47,10 @@ class GenericPlugin(object):
                 # Add the setting to the settings_cache
                 profile._settings[setting] = settings[setting]
             if(not settings_complete):
-                print(interface.status_text(self.gettext(
-                    "Configuring {}"
-                ).format(
-                    self._plugin_info.name
-                )))
+                visualizations.run_visualization(
+                    "output",
+                    self.gettext("Configuring {}").format(self._plugin_info.name)
+                )
                 for setting in settings:
                     interface.get_setting(
                         setting, settings[setting]
@@ -180,18 +179,13 @@ class VADPlugin(GenericPlugin):
     def _voice_detected(self, *args, **kwargs):
         pass
 
-    def get_audio(self):
+    def get_audio(self, *args, **kwargs):
         frames = collections.deque([], 30)
         last_voice_frame = 0
         recording = False
         recording_frames = []
         self._logger.info("Waiting for voice data")
-        for frame in self._input_device.record(
-            self._input_device._input_chunksize,
-            self._input_device._input_bits,
-            self._input_device._input_channels,
-            self._input_device._input_rate
-        ):
+        for frame in self._input_device.record(*args, **kwargs):
             frames.append(frame)
             if(profile.get_arg('resetmic', False)):
                 return recording_frames
@@ -318,6 +312,8 @@ class TTIPlugin(GenericPlugin, metaclass=abc.ABCMeta):
     def cleantext(self, text):
         language = profile.get(["language"], "en-US")[:2]
         if language == "en":
+            if isinstance(text, list):
+                text = " ".join(text)
             words = text.split(" ")
             # Adapted from a list at
             # https://stackoverflow.com/questions/19790188/expanding-english-language-contractions-in-python

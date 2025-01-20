@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 from jinja2 import Template
 from naomi import profile
+from naomi import visualizations
 from typing import List, Sequence
 
 
@@ -31,7 +32,7 @@ TEMPLATES = {
 DEFAULT_PERSONALITY_PREPROMPT = [
     {
         "role": "system",
-        "content": "The following is a friendly conversation between a human and an AI named {keywords}. If {keywords} does not know the answer to a question, she truthfully says she does not know. Responses should be limited to one or two sentences and be as concise as possible. The following information has been provided by {keywords} and may be used to answer the request, but only if appropriate: {context}",
+        "content": "The following is a friendly conversation between a human and an AI named {keywords}. If {keywords} does not know the answer to a question, she truthfully says she does not know. Responses should be limited to one or two sentences and be as concise as possible.",
     },
 ]
 
@@ -56,6 +57,7 @@ class llama_client(object):
         self.template = Template(TEMPLATES[template])
 
     def process_query(self, query, context):
+        self.messages.append({'role': 'system', 'content': context})
         self.messages.append({'role': 'user', 'content': query})
         now = datetime.now()
         keywords = profile.get(['keyword'], ['NAOMI'])
@@ -64,12 +66,12 @@ class llama_client(object):
         keywords = " or ".join(keywords)
         # print(self.messages)
         prompt = self.template.render(
-            messages=[{"role": message['role'], 'content': message['content'].format(t=now, context=context, keywords=keywords)} for message in self.messages],
+            messages=[{"role": message['role'], 'content': message['content'].format(t=now, keywords=keywords)} for message in self.messages],
             bos_token="<|begin_of_text|>",
             eos_token="<|end_of_text|>",
             add_generation_prompt=True
         )
-        # print(prompt)
+        print(prompt)
         data = {
             "stream": True,
             "prompt": prompt
@@ -83,11 +85,13 @@ class llama_client(object):
                 stream=True
             ) as response:
                 sentence = []
+                tokens = ""
                 for line in response.iter_lines():
                     if line:
                         line = self._clean_raw_bytes(line)
                         next_token = self._process_line(line)
                         if next_token:
+                            tokens += f"\x1b[36m*{next_token}* \x1b[0m"
                             sentence.append(next_token)
                             if next_token in [
                                 ".",
@@ -97,13 +101,22 @@ class llama_client(object):
                                 "\n",
                                 "\n\n"
                             ]:
+                                visualizations.run_visualization(
+                                    "output",
+                                    tokens
+                                )
                                 sentence = self._process_sentence(sentence)
                                 sentences.append(sentence)
                                 self.mic.say(sentence)
+                                tokens = ''
                                 sentence = []
                             if next_token == "<|im_end|>":
                                 break
                 if sentence:
+                    visualizations.run_visualization(
+                        "output",
+                        tokens
+                    )
                     sentence = self._process_sentence(sentence)
                     self.mic.say(sentence)
                     sentences.append(sentence)

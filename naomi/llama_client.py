@@ -19,6 +19,25 @@ TEMPLATES = {
         "    {{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}",
         "{% endif %}"
     ]),
+    "ALPACA": "".join(["""
+{{ (messages|selectattr('role', 'equalto', 'system')|list|last).content|trim if (messages|selectattr('role', 'equalto', 'system')|list) else '' }}
+
+{% for message in messages %}
+{% if message['role'] == 'user' %}
+### Instruction:
+{{ message['content']|trim -}}
+{% elif message['role'] == 'assistant' %}
+### Response:
+{{ message['content']|trim -}}
+{% else %}
+### Input:
+{{ message['content']|trim -}}
+{% endif %}
+{% endfor %}
+{% if add_generation_prompt and messages[-1]['role'] != 'assistant' %}
+### Response:
+{% endif %}
+    """]),
     "CHATML": "".join([
         "{{ bos_token }}",
         "{% for message in messages %}",

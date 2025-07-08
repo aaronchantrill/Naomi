@@ -45,13 +45,12 @@ class ShutdownPlugin(plugin.SpeechHandlerPlugin):
         name = profile.get_profile_var(['first_name'], '')
 
         messages = [
-            self.gettext("I'm shutting down."),
-            self.gettext("Shutting down now."),
-            self.gettext("Bye Bye."),
-            self.gettext("Goodbye, {}").format(name)
+            self.gettext("I'm shutting down. [shutdown]"),
+            self.gettext("Shutting down now. [shutdown]"),
+            self.gettext("Bye Bye. [shutdown]"),
+            self.gettext("Goodbye, {} [shutdown]").format(name)
         ]
 
         message = random.choice(messages)
 
-        mic.say_sync(message)
-        mic.Continue = False
+        mic.say(message)

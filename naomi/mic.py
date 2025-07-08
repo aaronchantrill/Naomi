@@ -49,6 +49,12 @@ class Utterance:
         else:
             return self.transcription
 
+    def __getitem__(self, index):
+        if isinstance(self.transcription, list):
+            return " ".join(self.transcription)[index]
+        else:
+            return self.transcription[index]
+
 
 class Mic(i18n.GettextMixin):
     """
@@ -364,7 +370,8 @@ class Mic(i18n.GettextMixin):
                     if self.use_llm and intent['allow_llm']:
                         self.buffer_output = True
                         self.output_buffer = []
-                        intent['action'](intent, self)
+                        if intent['action']:
+                            intent['action'](intent, self)
                         self.buffer_output = False
                         context = self.output_buffer
                         visualizations.run_visualization(
@@ -417,7 +424,11 @@ class Mic(i18n.GettextMixin):
                         )
                     )
             else:
-                self.say_i_do_not_understand()
+                if self.use_llm:
+                    # If no intent has been identified, don't send any context
+                    self.llama_client.process_query(utterance.transcription, "")
+                else:
+                    self.say_i_do_not_understand()
                 handled = True
         if not self.Continue:
             quit()
@@ -560,6 +571,7 @@ class Mic(i18n.GettextMixin):
             time.sleep(.5)
 
     def say(self, phrase):
+        self.llama_client.messages.append({"role": "assistant", "content": phrase})
         visualizations.run_visualization("output", ">> {}".format(phrase))
         with tempfile.SpooledTemporaryFile() as f:
             f.write(self.tts_engine.say(phrase))

@@ -1,50 +1,48 @@
 import requests
 import subprocess
 import tarfile
+from pathlib import Path
 from tqdm import tqdm
 import os
 
 
-def download_file(url, local_filename=None):
+def download_file(url: str, local_filename: Path=None) -> Path:
     if local_filename is None:
-        # The default is to save the file to the current directory
-        local_filename = url.split('/')[-1]
-    local_filename = os.path.expanduser(local_filename)
+        # The default is to save the file to the application root directory
+        # using the same filename as the url
+        local_filename = Path(__file__).resolve().parent.parent / url.split('/')[-1]
+    local_filename = local_filename.expanduser()
     print(f"Downloading {url} to {local_filename}")
     # Get the directory path and check if it exists
-    directory = os.path.dirname(local_filename)
+    directory: Path = local_filename.parent
     if directory and not os.path.exists(directory):
         print(f"Creating {directory}")
-        os.makedirs(directory, exist_ok=True)
-
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-
-    total_size = int(response.headers.get('content-length', 0))
-
-    with open(local_filename, 'wb') as f, tqdm(
-        desc=local_filename,
-        total=total_size,
-        unit='iB',
-        unit_scale=True,
-        unit_divisor=1024,
-    ) as progress_bar:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk: # filter out keep-alive new chunks
-                f.write(chunk)
-                progress_bar.update(len(chunk))
-
+        directory.mkdir(parents=True, exist_ok=True)
+    with requests.get(url, stream=True) as response:
+        response.raise_for_status()
+        total_size = int(response.headers.get('content-length', 0))
+        with open(local_filename, 'wb') as f, tqdm(
+            desc=local_filename,
+            total=total_size,
+            unit='iB',
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as progress_bar:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk: # filter out keep-alive new chunks
+                    f.write(chunk)
+                    progress_bar.update(len(chunk))
     return local_filename
 
-def extract_tar(filename):
-    filename = os.path.expanduser(filename)
+def extract_tar(filename: Path) -> None:
+    filename = filename.expanduser()
     directory = os.path.dirname(filename)
-    print(f"Extracting {filename}...")
+    print(f"Extracting {filename} to {directory}...")
     with tarfile.open(filename, "r:bz2") as tar:
         tar.extractall(path=directory)
     print(f"Extraction complete.")
 
-def clone_repository(repo_url, target_directory):
+def clone_repository(repo_url: str, target_directory: str):
     # Create the target directory if it doesn't exist
     if not os.path.exists(target_directory):
         os.makedirs(target_directory, exist_ok=True)

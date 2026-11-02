@@ -35,15 +35,15 @@ class VoiceAssistant:
     ``TTSEngine``.
     """
 
-    def __init__(self, config_path: str | Path = "config.json") -> None:
-        self.config_path = Path(config_path)
+    def __init__(self, config_path: Path = Path("~/.config/Naomi/config.json")) -> None:
+        self.config_path = config_path
         self.cfg         = self._load_config()
 
         self.srv_cfg = self.cfg["server"]
         self.host    = self.srv_cfg.get("host", "0.0.0.0")
         self.port    = self.srv_cfg.get("port", 8443)
-        self.cert    = self.srv_cfg.get("cert_file", "cert.pem")
-        self.key     = self.srv_cfg.get("key_file",  "key.pem")
+        self.cert    = Path(self.srv_cfg.get("cert_file", "cert.pem")).expanduser().resolve()
+        self.key     = Path(self.srv_cfg.get("key_file",  "key.pem")).expanduser().resolve()
 
         self._ensure_cert()
 
@@ -103,7 +103,7 @@ class VoiceAssistant:
 
         # Read the index.html file each time it is served, so changes don't
         # require a restart
-        with open("index.html", "r") as f:
+        with open(Path(__file__).parent.parent / "index.html", "r") as f:
             index_html = f.read().replace(
                 "__TTS_SAMPLE_RATE__",
                 str(self.llm.tts.sample_rate)
@@ -113,7 +113,7 @@ class VoiceAssistant:
         async def index():
             # Read the index.html file each time it is served, so changes don't
             # require a restart
-            with open("index.html", "r") as f:
+            with open(Path(__file__).parent.parent / "index.html", "r") as f:
                 index_html = f.read().replace(
                     "__TTS_SAMPLE_RATE__",
                     str(self.llm.tts.sample_rate)

@@ -25,9 +25,9 @@ Naomi is installed from source code and written in mostly Python. You will need 
     ```bash
     pip3 install -r requirements.txt
     ```
-5. Download the models (asr, tts, punctuation)
+5. Download the models (asr, tts, punctuation) and create configuration files in the ~/.config/Naomi directory (config.json, system_prompt.txt) by running naomi_setup.py
     ```bash
-    python3 download_models.py
+    python3 naomi_setup.py
     ```
 6. Edit the "llm" configuration file to point the llm host at your chosen LLM (unless you are using localhost port 8080).
 7. Run Naomi.py

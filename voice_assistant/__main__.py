@@ -4,12 +4,11 @@ import functools
 import logging
 import signal
 from pathlib import Path
-
 from .assistant import VoiceAssistant
 
-log = logging.getLogger(__name__)
 
-DEFAULT_CONFIG = Path(__file__).parent.parent / "config.json"
+log = logging.getLogger(__name__)
+DEFAULT_CONFIG = Path("~").expanduser() / ".config" / "Naomi" / "config.json"
 
 
 def custom_signal_handler(assistant: VoiceAssistant) -> None:

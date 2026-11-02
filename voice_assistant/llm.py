@@ -33,11 +33,11 @@ class LLMClient:
         self.api_key: str = llm_cfg.get("api_key", None)
         self.prompt_headers: dict = {'Authorization': self.api_key or "Insert your api key here"}
         self.enable_thinking = llm_cfg.get("enable_thinking", False)
-        system_prompt_file: str = llm_cfg.get("system_prompt", "system_prompt.txt")
+        system_prompt_file: str = Path(llm_cfg.get("system_prompt", "~/.config/Naomi/system_prompt.txt")).expanduser().resolve()
         with open(system_prompt_file, "r") as f:
             self.system_prompt: str = f.read()
-        self.short_term_memory_log: str = llm_cfg.get("short_term_memory_log", "short_term_memories.json")
-        self.long_term_memory_log: str = llm_cfg.get("long_term_memory_log", "long_term_memories.json")
+        self.short_term_memory_log: str = Path(llm_cfg.get("short_term_memory_log", "~/.config/Naomi/short_term_memories.json")).expanduser().resolve()
+        self.long_term_memory_log: str = Path(llm_cfg.get("long_term_memory_log", "~/.config/Naomi/long_term_memories.json")).expanduser().resolve()
         self.tts: TTSEngine = TTSEngine(tts_cfg=tts_cfg)
         # Get the LLM server properties
         props_url: str = f"{self.completion_url}/props"
@@ -91,20 +91,7 @@ class LLMClient:
             with open(self.short_term_memory_log, "r") as f:
                 self.short_term_memories = json.load(f)
         except FileNotFoundError:
-            now = datetime.now()
-            self.short_term_memories = [
-                {
-                    "name": "system",
-                    "is_user": False,
-                    "is_system": True,
-                    "send_date": f"{now.strftime('%B %d, %Y %I:%M%p').lower()}",
-                    "mes": self.system_prompt,
-                    "extra":{
-                        "completion_url": f"{self.completion_url}{self.endpoint}",
-                        "model_path": self.model_path
-                    }
-                }
-            ]
+            self.short_term_memories = []
         try:
             with open(self.long_term_memory_log, "r") as f:
                 self.long_term_memories = json.load(f)

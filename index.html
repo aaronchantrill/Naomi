@@ -110,7 +110,7 @@
 
   <div id="tts-row">
     <textarea id="text-input" type="text" placeholder=""/></textarea>
-    <button id="record-btn">&#127908;</button>
+    <button id="record-btn" title="Start Listening">&#127908;</button>
     <button id="send-btn">Send</button>
   </div>
   <div id="status">idle</div>
@@ -330,11 +330,13 @@
                 await startCapture();
                 listening = true;
                 recordBtn.classList.add('active');
+                recordBtn.title = "Stop Listening";
             }
             catch(err) {
                 setStatus('error: ' + err.message);
                 listening = false;
                 recordBtn.classList.remove('active');
+                recordBtn.title = "Start Listening";
             }
         } else {
             stopCapture();

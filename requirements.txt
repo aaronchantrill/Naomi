@@ -1,0 +1,12 @@
+aiohttp
+aiohttp
+cryptography
+fastapi
+Jinja2
+numpy
+piper_tts
+Requests
+sherpa_onnx
+tqdm
+uvicorn[standard]
+websockets
